@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Plan your day - Adventure{% endblock %}
+{% block content %}
+<h1>Plan your day</h1>
+
+<section class="about">
+  <h2>What does this app do?</h2>
+  <p>
+    You enter your zip code, how far you're willing to go, and a date.
+    The app builds a fun day out of real places near you, in an order that
+    makes sense, with each stop close to the last one.
+  </p>
+</section>
+
+{% if message %}<p class="error">{{ message }}</p>{% endif %}
+
+{# The browser checks the fields first; the server checks them again in app.py. #}
+<form action="{{ url_for('plan') }}" method="get">
+  <label for="zip">Zip code</label>
+  <input id="zip" name="zip" type="text" inputmode="numeric" pattern="[0-9]{5}" maxlength="5"
+         required placeholder="94501" value="{{ values.zip or '' }}">
+  {% if errors.zip %}<p class="error">{{ errors.zip }}</p>{% endif %}
+
+  <label for="miles">How far will you go? (miles)</label>
+  <input id="miles" name="miles" type="number" min="{{ config.MIN_MILES }}" max="{{ config.MAX_MILES }}"
+         step="1" required value="{{ values.miles if values.miles is not none else '' }}">
+  {% if errors.miles %}<p class="error">{{ errors.miles }}</p>{% endif %}
+
+  <label for="date">Date</label>
+  <input id="date" name="date" type="date" required min="{{ min_date }}" value="{{ values.date or '' }}">
+  {% if errors.date %}<p class="error">{{ errors.date }}</p>{% endif %}
+
+  <button type="submit" class="big-button">Build my day</button>
+</form>
+
+<script>
+  // The server's clock may be in a different time zone than you, so set
+  // "today" (and the earliest allowed date) using your own computer's date.
+  (function () {
+    var field = document.getElementById("date");
+    var now = new Date();
+    var today = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    field.min = today;
+    if (!field.value || field.value < today) { field.value = today; }
+  })();
+</script>
+{% endblock %}

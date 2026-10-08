@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Your day - Adventure{% endblock %}
+{% block content %}
+{% if error %}
+  <h1>Sorry!</h1>
+  <p class="error">{{ error }}</p>
+  <p><a class="button" href="{{ request.url }}">Try again</a>
+     <a href="{{ url_for('setup') }}">Start over</a></p>
+{% else %}
+  <h1>{{ nice_date }}</h1>
+  <p class="subtitle">
+    Your adventure near {{ values.zip }} ({{ area.center.place }}), within {{ values.miles }} miles.
+  </p>
+
+  {% if too_few %}
+    <p class="error">
+      We could only find {{ stops|length }} stop{{ '' if stops|length == 1 else 's' }} for this day.
+      Try a bigger mile range to get a full plan.
+    </p>
+  {% endif %}
+
+  {% if stops %}
+  <ol class="stops">
+    {% for stop in stops %}
+    <li class="stop">
+      <p class="time">{{ stop.start }} &ndash; {{ stop.end }} &middot; {{ stop.slot }}</p>
+      <h2>{{ stop.place.name }}</h2>
+      <p class="type">{{ stop.place.label }}</p>
+      {% if stop.place.address %}<p>{{ stop.place.address }}</p>{% endif %}
+      <p class="distance">
+        {{ "under 0.1" if stop.miles_from_previous < 0.1 else stop.miles_from_previous }} mi
+        {{ "from the center of your zip code" if stop.is_first else "from the previous stop" }}
+      </p>
+      <a href="https://www.google.com/maps/search/?api=1&amp;query={{ stop.place.lat }},{{ stop.place.lon }}"
+         target="_blank" rel="noopener">Open in Google Maps</a>
+    </li>
+    {% endfor %}
+  </ol>
+  {% endif %}
+
+  <form action="{{ url_for('plan') }}" method="get" class="actions">
+    <input type="hidden" name="zip" value="{{ values.zip }}">
+    <input type="hidden" name="miles" value="{{ values.miles }}">
+    <input type="hidden" name="date" value="{{ values.date.isoformat() }}">
+    <input type="hidden" name="prev" value="{{ signature }}">
+    <button type="submit" class="big-button">Try another plan</button>
+  </form>
+  <p><a href="{{ url_for('setup') }}">Start over</a></p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,13 @@
+# Render "Blueprint" file: tells Render how to build and start the app.
+services:
+  - type: web
+    name: adventure
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    # One worker (so the 10-minute cache is shared) with a few threads.
+    # The long timeout leaves room for the zip lookup plus two Overpass searches (each with a fallback).
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.10
