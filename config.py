@@ -6,13 +6,18 @@ All settings for the Adventure app live here so they are easy to find and change
 # Outside data sources (free, no API key needed)
 # ---------------------------------------------------------------------------
 ZIP_API_URL = "https://api.zippopotam.us/us/{zip}"
-OVERPASS_URLS = [
-    "https://overpass-api.de/api/interpreter",          # tried first
-    "https://overpass.kumi.systems/api/interpreter",    # fallback
+OVERPASS_URLS = [                                       # tried in this order
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
 ]
-USER_AGENT = "AdventureDayPlanner/1.0 (school project; Python Flask app)"
+USER_AGENT = "AdventureApp/1.0 (school project; github.com/ElieWoodward)"
 ZIP_TIMEOUT_SECONDS = 10
-OVERPASS_TIMEOUT_SECONDS = 25
+OVERPASS_TIMEOUT_SECONDS = 25   # longest wait for any single Overpass request
+OVERPASS_TOTAL_SECONDS = 90     # time budget for ALL Overpass attempts in one request
+                                # (zip lookup + this must stay under gunicorn's 120s timeout)
+BUSY_RETRY_WAIT_SECONDS = 2     # if a server says it's busy, wait this long and retry once
 OVERPASS_MAXSIZE_BYTES = 128 * 1024 * 1024   # asking for less memory helps busy servers accept the query
 FIRST_SEARCH_MILES = 5           # search this close first; only search the full range if needed
 ENOUGH_PLACES_PER_SLOT = 3       # "needed" = some part of the day has fewer choices than this

@@ -9,6 +9,7 @@ import logging
 import os
 import random
 import re
+import sys
 from datetime import date, timedelta
 
 from flask import Flask, render_template, request
@@ -19,7 +20,13 @@ import places
 import planner
 
 app = Flask(__name__)
-logging.basicConfig(level=logging.INFO)
+# Send log lines to standard output so they show up in Render's "Logs" tab.
+logging.basicConfig(
+    level=logging.INFO,
+    stream=sys.stdout,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    force=True,
+)
 
 
 def validate_form(form, today=None):

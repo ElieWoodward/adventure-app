@@ -6,8 +6,10 @@ services:
     plan: free
     buildCommand: pip install -r requirements.txt
     # One worker (so the 10-minute cache is shared) with a few threads.
-    # The long timeout leaves room for the zip lookup plus two Overpass searches (each with a fallback).
+    # 120s timeout: the zip lookup (10s max) plus the Overpass time budget (90s, see config.py) fit inside it.
     startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.10
+      - key: PYTHONUNBUFFERED      # print log lines immediately
+        value: "1"

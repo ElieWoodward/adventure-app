@@ -55,7 +55,7 @@ def test_small_search_is_enough_in_a_busy_area(monkeypatch):
     calls = []
     monkeypatch.setattr(places, "lookup_zip", lambda z: CENTER)
     monkeypatch.setattr(places, "fetch_places",
-                        lambda lat, lon, miles: calls.append(miles) or one_of_everything(5))
+                        lambda lat, lon, miles, deadline=None: calls.append(miles) or one_of_everything(5))
     places.get_area("94501", 25)
     assert calls == [config.FIRST_SEARCH_MILES]
 
@@ -64,7 +64,7 @@ def test_full_range_is_searched_when_small_search_is_thin(monkeypatch):
     calls = []
     monkeypatch.setattr(places, "lookup_zip", lambda z: CENTER)
 
-    def fetch(lat, lon, miles):
+    def fetch(lat, lon, miles, deadline=None):
         calls.append(miles)
         return one_of_everything(1 if miles == config.FIRST_SEARCH_MILES else 5)
     monkeypatch.setattr(places, "fetch_places", fetch)
@@ -77,7 +77,7 @@ def test_results_are_cached(monkeypatch):
     calls = []
     monkeypatch.setattr(places, "lookup_zip", lambda z: CENTER)
     monkeypatch.setattr(places, "fetch_places",
-                        lambda lat, lon, miles: calls.append(miles) or one_of_everything(5))
+                        lambda lat, lon, miles, deadline=None: calls.append(miles) or one_of_everything(5))
     places.get_area("94501", 5)
     places.get_area("94501", 5)
     assert len(calls) == 1
