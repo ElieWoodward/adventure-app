@@ -101,3 +101,69 @@ def test_too_few_stops_suggests_bigger_range(client, monkeypatch):
     monkeypatch.setattr(places, "get_area", lambda zip_code, miles: area)
     page = client.get("/plan?zip=94501&miles=5&date=2099-01-01").get_data(as_text=True)
     assert "bigger mile range" in page
+
+
+# --- "ding" sound ---------------------------------------------------------------
+ONE_PLACE_AREA = {
+    "center": {"lat": 37.76, "lon": -122.24, "place": "Alameda, CA"},
+    "places": [{"id": "node/1", "name": "Crab Cove", "label": "Park", "kind": "park",
+                "lat": 37.765, "lon": -122.245, "address": ""}],
+}
+
+
+@pytest.fixture
+def one_stop(monkeypatch):
+    stop = {"place": ONE_PLACE_AREA["places"][0], "start": "10:00 AM", "end": "11:00 AM",
+            "slot": "Morning", "miles_from_previous": 0.4, "is_first": True}
+    monkeypatch.setattr(places, "get_area", lambda zip_code, miles: ONE_PLACE_AREA)
+    monkeypatch.setattr(adventure.planner, "build_plan", lambda *args: [stop])
+
+
+def test_setup_form_submits_the_ding_flag(client):
+    page = client.get("/setup").get_data(as_text=True)
+    assert '<input type="hidden" name="ding" value="1">' in page
+
+
+def test_results_after_form_submit_include_ding(client, one_stop):
+    page = client.get("/plan?zip=94501&miles=5&date=2099-01-01&ding=1").get_data(as_text=True)
+    assert 'id="ding-sound"' in page
+    assert "replaceState" in page
+
+
+def test_try_another_plan_has_no_ding_flag(client, one_stop):
+    page = client.get("/plan?zip=94501&miles=5&date=2099-01-01&ding=1").get_data(as_text=True)
+    try_another = page.split('class="actions"')[1].split("</form>")[0]
+    assert "Try another plan" in try_another
+    assert "ding" not in try_another
+
+
+def test_no_ding_without_the_flag(client, one_stop):
+    page = client.get("/plan?zip=94501&miles=5&date=2099-01-01&prev=node/1").get_data(as_text=True)
+    assert "Crab Cove" in page
+    assert "ding-sound" not in page
+
+
+def test_no_ding_when_no_plan_was_made(client, monkeypatch):
+    area = {"center": ONE_PLACE_AREA["center"], "places": []}
+    monkeypatch.setattr(places, "get_area", lambda zip_code, miles: area)
+    page = client.get("/plan?zip=94501&miles=5&date=2099-01-01&ding=1").get_data(as_text=True)
+    assert "ding-sound" not in page
+
+
+def test_error_pages_never_ding(client, monkeypatch):
+    def broken(zip_code, miles):
+        raise places.PlaceDataError("The map service is busy.")
+    monkeypatch.setattr(places, "get_area", broken)
+    page = client.get("/plan?zip=94501&miles=5&date=2099-01-01&ding=1").get_data(as_text=True)
+    assert "The map service is busy." in page
+    assert "ding" not in page            # no script, and "Try again" drops the flag
+
+    page = client.get("/no-such-page?ding=1").get_data(as_text=True)
+    assert "Oops" in page and "ding" not in page
+
+    def crash(zip_code, miles):
+        raise RuntimeError("boom")
+    monkeypatch.setattr(places, "get_area", crash)
+    response = client.get("/plan?zip=94501&miles=5&date=2099-01-01&ding=1")
+    assert response.status_code == 500
+    assert "ding" not in response.get_data(as_text=True)

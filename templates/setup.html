@@ -30,6 +30,9 @@
   <input id="date" name="date" type="date" required min="{{ min_date }}" value="{{ values.date or '' }}">
   {% if errors.date %}<p class="error">{{ errors.date }}</p>{% endif %}
 
+  {# Tells the results page this came from the form, so it plays a "ding". #}
+  <input type="hidden" name="ding" value="1">
+
   <button type="submit" class="big-button">Build my day</button>
 </form>
 

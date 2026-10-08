@@ -4,7 +4,7 @@
 {% if error %}
   <h1>Sorry!</h1>
   <p class="error">{{ error }}</p>
-  <p><a class="button" href="{{ request.url }}">Try again</a>
+  <p><a class="button" href="{{ retry_url }}">Try again</a>
      <a href="{{ url_for('setup') }}">Start over</a></p>
 {% else %}
   <h1>{{ nice_date }}</h1>
@@ -46,5 +46,40 @@
     <button type="submit" class="big-button">Try another plan</button>
   </form>
   <p><a href="{{ url_for('setup') }}">Start over</a></p>
+
+  {% if ding %}
+  <script id="ding-sound">
+    // A soft "ding" when a new plan arrives from the setup form. If the
+    // browser blocks sound, nothing happens. Then drop ding=1 from the
+    // address so a refresh doesn't ding again.
+    (function () {
+      try {
+        var AudioCtx = window.AudioContext || window.webkitAudioContext;
+        var ctx = new AudioCtx();
+        var now = ctx.currentTime;
+        var volume = ctx.createGain();
+        volume.gain.setValueAtTime(0.0001, now);
+        volume.gain.exponentialRampToValueAtTime(0.12, now + 0.01);
+        volume.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
+        volume.connect(ctx.destination);
+        [880, 1760].forEach(function (pitch) {   // a note plus its octave sounds bell-like
+          var tone = ctx.createOscillator();
+          tone.type = "sine";
+          tone.frequency.value = pitch;
+          tone.connect(volume);
+          tone.start(now);
+          tone.stop(now + 0.45);
+        });
+        var resumed = ctx.resume();
+        if (resumed && resumed.catch) { resumed.catch(function () {}); }
+      } catch (e) {}
+      try {
+        var url = new URL(window.location.href);
+        url.searchParams.delete("ding");
+        history.replaceState(history.state, "", url.pathname + url.search + url.hash);
+      } catch (e) {}
+    })();
+  </script>
+  {% endif %}
 {% endif %}
 {% endblock %}

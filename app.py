@@ -12,7 +12,7 @@ import re
 import sys
 from datetime import date, timedelta
 
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, url_for
 from werkzeug.exceptions import HTTPException
 
 import config
@@ -105,7 +105,10 @@ def plan():
     except places.ZipNotFoundError as error:
         return render_setup(request.args, {"zip": str(error)})
     except places.PlaceDataError as error:
-        return render_template("results.html", values=values, error=str(error))
+        # "Try again" repeats this request, minus the ding flag.
+        retry_args = {key: value for key, value in request.args.items() if key != "ding"}
+        return render_template("results.html", values=values, error=str(error),
+                               retry_url=url_for("plan", **retry_args))
 
     # "Try another plan" sends the ids of the last plan; try a few times to get a different one.
     previous = request.args.get("prev", "")
@@ -123,6 +126,8 @@ def plan():
         stops=stops,
         signature=signature,
         too_few=len(stops) < config.MIN_STOPS,
+        # Only the setup form sends ding=1; "Try another plan" doesn't.
+        ding=request.args.get("ding") == "1" and bool(stops),
         config=config,
     )
 
